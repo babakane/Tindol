@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to Securely Store API Keys in Vite + React</title>
+    <link rel="stylesheet" href="../blog-styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="blog-nav">
+        <a href="../index.html" class="nav-back">← Blog Home</a>
+        <span class="nav-category">Frontend Security</span>
+    </nav>
+
+    <article class="article-container">
+        <header class="article-header">
+            <span class="article-tag">Security</span>
+            <h1>How to Securely Store API Keys in Vite + React with <code>.env.local</code></h1>
+            <div class="article-meta">
+                <span class="reading-time">8 min read</span>
+                <span class="publish-date">May 2026</span>
+            </div>
+        </header>
+
+        <div class="article-content">
+            <p class="lead">Every modern web application eventually needs to communicate with external services. Whether it's fetching weather data, integrating with payment gateways, or connecting to AI models like Gemini, those integrations require API keys. The question isn't <em>if</em> you'll need them—it's <em>how</em> you'll protect them.</p>
+
+            <p>I've seen too many developers hardcode API keys directly into their source code, commit them to GitHub, and then wonder why their cloud bill suddenly skyrockets. This guide will show you the professional approach to handling secrets in Vite + React applications.</p>
+
+            <h2>The Problem with Exposed API Keys</h2>
+
+            <p>When you embed an API key directly in your JavaScript bundle, you're not just exposing it to your users—you're publishing it to the entire internet. Modern bundlers create minified, but still readable, source maps. Browser developer tools make extraction trivial. Malicious actors run automated scrapers that hunt for API keys in public repositories.</p>
+
+            <p>The consequences range from annoying to catastrophic:</p>
+
+            <ul>
+                <li><strong>Rate limit exhaustion:</strong> Someone else uses your quota</li>
+                <li><strong>Data exfiltration:</strong> Attackers access your service data</li>
+                <li><strong>Financial liability:</strong> Unexpected API charges</li>
+                <li><strong>Reputational damage:</strong> Compromised user data</li>
+            </ul>
+
+            <h2>Understanding the Vite Environment Variable System</h2>
+
+            <p>Vite uses a dotenv-based system that's intuitive but has specific rules you must understand. Unlike Create React App's <code>REACT_APP_</code> prefix, Vite requires <code>VITE_</code> for client-side variables.</p>
+
+            <p>Here's the critical distinction:</p>
+
+            <div class="code-block">
+                <pre><code># .env — loaded in all modes, committed to repo
+VITE_APP_NAME=MyApp
+
+# .env.local — loaded in all modes, NOT committed (local overrides)
+VITE_API_URL=https://api.example.com
+
+# .env.development — loaded only in dev mode
+VITE_DEBUG=true
+
+# .env.production — loaded only in production builds
+VITE_ANALYTICS_ID=UA-XXXXX</code></pre>
+            </div>
+
+            <p>Only variables prefixed with <code>VITE_</code> are exposed to your client-side code. Variables without this prefix remain server-side only—which is exactly what you want for truly secret values.</p>
+
+            <h2>Setting Up Your Project Structure</h2>
+
+            <p>A well-organized project makes security easier to maintain. Here's the structure I recommend:</p>
+
+            <div class="code-block">
+                <pre><code>my-vite-app/
+├── src/
+│   ├── components/
+│   ├── services/
+│   │   └── api.js          # Centralized API configuration
+│   └── utils/
+│       └── env.js          # Environment validation
+├── .env                    # Public defaults (committed)
+├── .env.local              # Local secrets (gitignored)
+├── .env.example            # Template for new developers
+├── .env.production         # Production overrides
+└── .gitignore              # MUST exclude .env.local</code></pre>
+            </div>
+
+            <h2>Step 1: Configure <code>.gitignore</code></h2>
+
+            <p>This is non-negotiable. Before you create any environment files, ensure your <code>.gitignore</code> properly excludes sensitive files:</p>
+
+            <div class="code-block">
+                <pre><code># Environment variables
+.env.local
+.env.*.local
+
+# But keep these for reference
+!.env
+!.env.example
+!.env.production</code></pre>
+            </div>
+
+            <p>The <code>!.env</code> exception allows public, non-sensitive defaults to be committed. The <code>.env.local</code> pattern catches all local override files.</p>
+
+            <h2>Step 2: Create the <code>.env.example</code> Template</h2>
+
+            <p>This file serves as documentation and onboarding for new team members. It shows which variables are needed without exposing real values:</p>
+
+            <div class="code-block">
+                <pre><code># Copy this file to .env.local and fill in your values
+
+# Gemini API Key (get yours at https://ai.google.dev/)
+VITE_GEMINI_API_KEY=your_api_key_here
+
+# API Base URL
+VITE_API_BASE_URL=https://generativelanguage.googleapis.com
+
+# Feature Flags
+VITE_ENABLE_ANALYTICS=false
+VITE_DEBUG_MODE=true</code></pre>
+            </div>
+
+            <h2>Step 3: Build a Centralized API Service</h2>
+
+            <p>Rather than scattering <code>import.meta.env.VITE_...</code> throughout your components, create a dedicated service layer. This centralizes configuration, enables validation, and makes future migrations painless.</p>
+
+            <div class="code-block">
+                <pre><code>// src/services/api.js
+import { validateEnv } from '../utils/env';
+
+// Validate environment on module load
+const env = validateEnv([
+  'VITE_GEMINI_API_KEY',
+  'VITE_API_BASE_URL'
+]);
+
+class GeminiService {
+  constructor() {
+    this.apiKey = env.VITE_GEMINI_API_KEY;
+    this.baseUrl = env.VITE_API_BASE_URL;
+    this.model = 'gemini-pro';
+  }
+
+  async generateContent(prompt) {
+    const response = await fetch(
+      `${this.baseUrl}/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }]
+        })
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  // Method to check if API is configured
+  isConfigured() {
+    return Boolean(this.apiKey && this.apiKey !== 'your_api_key_here');
+  }
+}
+
+export const geminiService = new GeminiService();</code></pre>
+            </div>
+
+            <h2>Step 4: Add Environment Validation</h2>
+
+            <p>Fail fast, fail loudly. Don't let your app limp along with missing configuration. This utility validates required variables at startup:</p>
+
+            <div class="code-block">
+                <pre><code>// src/utils/env.js
+/**
+ * Validates that required environment variables are present.
+ * Throws descriptive errors in development, warns in production.
+ */
+export function validateEnv(requiredVars) {
+  const missing = requiredVars.filter(
+    key => !import.meta.env[key] || import.meta.env[key] === 'your_api_key_here'
+  );
+
+  if (missing.length > 0) {
+    const message = `Missing environment variables: ${missing.join(', ')}\n\n` +
+      `Please check your .env.local file. See .env.example for required variables.`;
+
+    if (import.meta.env.DEV) {
+      throw new Error(message);
+    } else {
+      console.warn(message);
+    }
+  }
+
+  return import.meta.env;
+}
+
+/**
+ * Safe getter that returns null for undefined variables
+ * rather than exposing undefined throughout the app.
+ */
+export function getEnv(key, defaultValue = null) {
+  return import.meta.env[key] || defaultValue;
+}</code></pre>
+            </div>
+
+            <h2>Step 5: Using in React Components</h2>
+
+            <p>With the service layer in place, your components stay clean and focused on UI logic:</p>
+
+            <div class="code-block">
+                <pre><code>// src/components/AIAssistant.jsx
+import { useState } from 'react';
+import { geminiService } from '../services/api';
+
+export function AIAssistant() {
+  const [response, setResponse] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // Check if properly configured
+  if (!geminiService.isConfigured()) {
+    return (
+      <div className="alert alert-warning">
+        ⚠️ API not configured. Please set your <code>VITE_GEMINI_API_KEY</code> in <code>.env.local</code>.
+      </div>
+    );
+  }
+
+  const handleSubmit = async (prompt) => {
+    setLoading(true);
+    try {
+      const result = await geminiService.generateContent(prompt);
+      setResponse(result.candidates[0].content.parts[0].text);
+    } catch (error) {
+      console.error('Generation failed:', error);
+      setResponse('Error: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="ai-assistant">
+      <PromptForm onSubmit={handleSubmit} />
+      {loading ? <Spinner /> : <ResponseDisplay text={response} />}
+    </div>
+  );
+}</code></pre>
+            </div>
+
+            <h2>Advanced: Proxying API Requests</h2>
+
+            <p>For production applications, avoid exposing API keys to the client entirely. Use Vite's dev server proxy to route requests through your backend:</p>
+
+            <div class="code-block">
+                <pre><code>// vite.config.js
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    proxy: {
+      '/api/gemini': {
+        target: 'https://generativelanguage.googleapis.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/gemini/, '/v1beta'),
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            // Add API key server-side, never expose to client
+            proxyReq.setHeader('X-Goog-Api-Key', process.env.GEMINI_API_KEY);
+          });
+        }
+      }
+    }
+  }
+});</code></pre>
+            </div>
+
+            <p>With this setup, your React code calls <code>/api/gemini/...</code> and the API key is injected server-side by the Vite dev server. In production, you'd replace this with your actual backend proxy.</p>
+
+            <h2>Production Deployment Checklist</h2>
+
+            <p>Before shipping to production, verify every item:</p>
+
+            <ul class="checklist">
+                <li><input type="checkbox" checked disabled> <code>.env.local</code> is in <code>.gitignore</code></li>
+                <li><input type="checkbox" checked disabled> No API keys in commit history (<code>git log --all --grep='key'</code>)</li>
+                <li><input type="checkbox" checked disabled> <code>.env.example</code> is up to date</li>
+                <li><input type="checkbox" checked disabled> Environment validation runs on startup</li>
+                <li><input type="checkbox" checked disabled> Production API keys are rotated and scoped</li>
+                <li><input type="checkbox" checked disabled> Rate limiting is configured on the service</li>
+                <li><input type="checkbox" checked disabled> Monitoring alerts for unusual API usage</li>
+            </ul>
+
+            <h2>The Bottom Line</h2>
+
+            <p>Security isn't a feature you bolt on at the end—it's a practice you integrate from day one. The <code>.env.local</code> pattern in Vite gives you a clean, maintainable way to manage secrets across development and production environments.</p>
+
+            <p>Remember: environment variables prefixed with <code>VITE_</code> <strong>will</strong> end up in your client bundle. For truly sensitive operations, always proxy through a backend you control. The extra complexity is insignificant compared to the cost of a compromised API key.</p>
+
+            <div class="article-footer-note">
+                <p><strong>Next up:</strong> Learn how to build a <a href="python-network-isolation.html">single-file Python app to control internet access per application</a>—perfect for securing your development environment from the network layer down.</p>
+            </div>
+        </div>
+    </article>
+
+    <footer class="blog-footer">
+        <div class="footer-content">
+            <p>© 2026 Minden. All tutorials are battle-tested in production environments.</p>
+            <nav class="footer-nav">
+                <a href="../index.html">Blog Home</a>
+                <a href="../../index.html">Main Site</a>
+            </nav>
+        </div>
+    </footer>
+</body>
+</html>

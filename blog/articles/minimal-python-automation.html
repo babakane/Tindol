@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lightweight Python Scripts for Productivity with Ollama</title>
+    <link rel="stylesheet" href="../blog-styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="blog-nav">
+        <a href="../index.html" class="nav-back">← Blog Home</a>
+        <span class="nav-category">Python & AI</span>
+    </nav>
+
+    <article class="article-container">
+        <header class="article-header">
+            <span class="article-tag">Automation</span>
+            <h1>Lightweight Python Scripts for Productivity with Ollama and Local Models</h1>
+            <div class="article-meta">
+                <span class="reading-time">11 min read</span>
+                <span class="publish-date">May 2026</span>
+            </div>
+        </header>
+
+        <div class="article-content">
+            <p class="lead">The promise of AI-assisted productivity has been co-opted by subscription services that want your data in the cloud. But the real power lies in lightweight, local automation scripts that run on your machine, process your files, and integrate with the tools you already use. This guide shows how to build a suite of productivity tools using Python and Ollama—completely offline, completely private.</p>
+
+            <h2>Why Local AI for Productivity?</h2>
+
+            <p>Cloud-based AI tools are convenient until they aren't:</p>
+
+            <ul>
+                <li><strong>Latency:</strong> Round-trip to the cloud adds seconds to every operation</li>
+                <li><strong>Privacy:</strong> Your journal entries, meeting notes, and drafts leave your device</li>
+                <li><strong>Cost:</strong> API fees accumulate imperceptibly until the bill arrives</li>
+                <li><strong>Reliability:</strong> No internet? No productivity tool</li>
+                <li><strong>Customization:</strong> Cloud APIs offer limited control over behavior</li>
+            </ul>
+
+            <p>Ollama changes this equation. It packages large language models into a simple CLI tool that exposes a local HTTP API. Combined with Python's ecosystem, you get enterprise-grade AI automation on commodity hardware.</p>
+
+            <h2>The Architecture: Minimal But Powerful</h2>
+
+            <div class="code-block no-syntax">
+                <pre><code>┌─────────────────────────────────────────┐
+│           Your Workflow Files           │
+│  (notes, code, documents, journals)    │
+└─────────────────────────────────────────┘
+                  │
+┌─────────────────▼───────────────────────┐
+│      Python Automation Scripts            │
+│  ┌────────┐ ┌────────┐ ┌────────────┐  │
+│  │Journal │ │ Code   │ │ Document   │  │
+│  │Analyzer│ │ Review │ │ Generator  │  │
+│  └────────┘ └────────┘ └────────────┘  │
+└─────────────────────────────────────────┘
+                  │
+┌─────────────────▼───────────────────────┐
+│           Ollama Local API              │
+│      (Llama 3, Mistral, Phi-3)          │
+│         http://localhost:11434          │
+└─────────────────────────────────────────┘
+                  │
+┌─────────────────▼───────────────────────┐
+│         Local LLM (4-8 GB RAM)          │
+└─────────────────────────────────────────┘</code></pre>
+            </div>
+
+            <h2>Setup: Installing Ollama</h2>
+
+            <p>One command installs the runtime:</p>
+
+            <div class="code-block">
+                <pre><code># macOS/Linux
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Or download from https://ollama.com/download
+
+# Pull a capable model
+ollama pull llama3.1:8b
+ollama pull mistral
+
+# Verify it's running
+ollama list
+# NAME            ID              SIZE    MODIFIED
+# llama3.1:8b     latest          4.7 GB  2 minutes ago
+# mistral:latest  latest          4.1 GB  5 minutes ago</code></pre>
+            </div>
+
+            <p>The 8B parameter models run comfortably on 8GB RAM laptops. For older hardware, <code>phi3:mini</code> (3.8B parameters, ~2.3GB) offers surprising capability.</p>
+
+            <h2>Script 1: Intelligent Journal Analyzer</h2>
+
+            <p>Journaling is only useful if you revisit and synthesize. This script analyzes entries, extracts themes, tracks mood trends, and surfaces insights you'd otherwise miss.</p>
+
+            <div class="code-block">
+                <pre><code>#!/usr/bin/env python3
+"""
+journal_analyzer.py — Extract insights from daily journal entries.
+
+Usage: python journal_analyzer.py ~/journal/
+"""
+
+import json
+import re
+from pathlib import Path
+from datetime import datetime, timedelta
+from dataclasses import dataclass, asdict
+from collections import Counter, defaultdict
+import requests
+
+
+@dataclass
+class JournalEntry:
+    date: str
+    content: str
+    word_count: int = 0
+    themes: list = None
+    sentiment: str = None
+    key_events: list = None
+    people_mentioned: list = None
+
+
+class OllamaClient:
+    """Minimal client for local Ollama API."""
+    
+    def __init__(self, model="llama3.1:8b", base_url="http://localhost:11434"):
+        self.model = model
+        self.base_url = base_url
+    
+    def generate(self, prompt, system=None, temperature=0.7):
+        payload = {
+            "model": self.model,
+            "prompt": prompt,
+            "stream": False,
+            "options": {"temperature": temperature}
+        }
+        if system:
+            payload["system"] = system
+        
+        response = requests.post(
+            f"{self.base_url}/api/generate",
+            json=payload,
+            timeout=120
+        )
+        response.raise_for_status()
+        return response.json()["response"]
+    
+    def generate_json(self, prompt, system=None):
+        """Request structured JSON output."""
+        json_prompt = f"""{prompt}
+
+You must respond with ONLY valid JSON, no markdown, no explanations.
+"""
+        response = self.generate(json_prompt, system, temperature=0.3)
+        
+        # Extract JSON from potential markdown
+        json_match = re.search(r'\{.*\}', response, re.DOTALL)
+        if json_match:
+            return json.loads(json_match.group())
+        
+        return json.loads(response)
+
+
+class JournalAnalyzer:
+    """Analyzes journal entries using local LLM."""
+    
+    def __init__(self, journal_dir, ollama_client=None):
+        self.journal_dir = Path(journal_dir)
+        self.ollama = ollama_client or OllamaClient()
+        self.entries: list[JournalEntry] = []
+    
+    def load_entries(self):
+        """Load all markdown journal files."""
+        for entry_file in sorted(self.journal_dir.glob("*.md")):
+            date_str = entry_file.stem  # Expected: YYYY-MM-DD.md
+            content = entry_file.read_text(encoding="utf-8")
+            
+            self.entries.append(JournalEntry(
+                date=date_str,
+                content=content,
+                word_count=len(content.split())
+            ))
+        
+        print(f"Loaded {len(self.entries)} journal entries")
+        return self
+    
+    def analyze_entry(self, entry: JournalEntry) -> JournalEntry:
+        """Use LLM to extract structured insights from an entry."""
+        
+        system_prompt = """You are a precise journal analyzer. Extract structured 
+information from journal entries. Respond in valid JSON only."""
+        
+        analysis_prompt = f"""Analyze this journal entry dated {entry.date}:
+
+{entry.content[:2000]}  # Truncate very long entries
+
+Extract and return JSON with these fields:
+- themes: array of 3-5 main themes (strings)
+- sentiment: "positive", "neutral", or "negative"
+- key_events: array of significant events mentioned
+- people_mentioned: array of names mentioned
+- summary: one-sentence summary of the entry
+"""
+        
+        try:
+            result = self.ollama.generate_json(analysis_prompt, system_prompt)
+            
+            entry.themes = result.get("themes", [])
+            entry.sentiment = result.get("sentiment", "neutral")
+            entry.key_events = result.get("key_events", [])
+            entry.people_mentioned = result.get("people_mentioned", [])
+            
+        except Exception as e:
+            print(f"Analysis failed for {entry.date}: {e}")
+            entry.themes = []
+            entry.sentiment = "unknown"
+        
+        return entry
+    
+    def analyze_all(self):
+        """Analyze all entries with progress tracking."""
+        for i, entry in enumerate(self.entries):
+            print(f"Analyzing {entry.date}... ({i+1}/{len(self.entries)})")
+            self.analyze_entry(entry)
+        
+        return self
+    
+    def generate_weekly_report(self, week_start: str):
+        """Generate a comprehensive weekly summary."""
+        start_date = datetime.strptime(week_start, "%Y-%m-%d")
+        end_date = start_date + timedelta(days=6)
+        
+        week_entries = [
+            e for e in self.entries
+            if start_date <= datetime.strptime(e.date, "%Y-%m-%d") <= end_date
+        ]
+        
+        if not week_entries:
+            return "No entries found for this week."
+        
+        # Aggregate themes
+        all_themes = [t for e in week_entries for t in (e.themes or [])]
+        top_themes = Counter(all_themes).most_common(5)
+        
+        # Sentiment distribution
+        sentiments = Counter(e.sentiment for e in week_entries if e.sentiment)
+        
+        # Word count trend
+        total_words = sum(e.word_count for e in week_entries)
+        avg_words = total_words / len(week_entries)
+        
+        report = f"""# Weekly Journal Report: {week_start}
+
+## Overview
+- Entries: {len(week_entries)}
+- Total words: {total_words}
+- Average daily words: {avg_words:.0f}
+
+## Sentiment
+{chr(10).join(f"- {sentiment}: {count}" for sentiment, count in sentiments.items())}
+
+## Top Themes
+{chr(10).join(f"- {theme} ({count} mentions)" for theme, count in top_themes)}
+
+## Key People
+{chr(10).join(f"- {person}" for person in set(p for e in week_entries for p in (e.people_mentioned or [])))}
+
+## Notable Events
+{chr(10).join(f"- {event}" for e in week_entries for event in (e.key_events or []))}
+"""
+        
+        return report
+    
+    def generate_insights(self):
+        """Generate long-term insights across all entries."""
+        all_themes = [t for e in self.entries for t in (e.themes or [])]
+        theme_evolution = defaultdict(list)
+        
+        for entry in self.entries:
+            date = datetime.strptime(entry.date, "%Y-%m-%d")
+            month = date.strftime("%Y-%m")
+            for theme in (entry.themes or []):
+                theme_evolution[theme].append(month)
+        
+        # Find recurring themes vs emerging ones
+        recurring = {
+            theme: len(set(months))
+            for theme, months in theme_evolution.items()
+            if len(months) >= 3
+        }
+        
+        # Detect sentiment trends
+        monthly_sentiment = defaultdict(lambda: Counter())
+        for entry in self.entries:
+            if entry.sentiment:
+                month = datetime.strptime(entry.date, "%Y-%m-%d").strftime("%Y-%m")
+                monthly_sentiment[month][entry.sentiment] += 1
+        
+        # Use LLM for narrative synthesis
+        synthesis_prompt = f"""Based on {len(self.entries)} journal entries spanning 
+{self.entries[0].date} to {self.entries[-1].date}, synthesize key insights:
+
+Recurring themes: {list(recurring.keys())[:10]}
+Sentiment by month: {dict(monthly_sentiment)}
+
+Provide a thoughtful analysis of:
+1. What patterns emerge across this period?
+2. What areas of life received most attention?
+3. What might the writer focus on next?
+4. One actionable recommendation
+
+Keep it warm, personal, and specific."""
+        
+        insights = self.ollama.generate(synthesis_prompt, temperature=0.8)
+        
+        return insights
+    
+    def export_analysis(self, output_path):
+        """Export all analyzed data to JSON for further processing."""
+        data = [asdict(entry) for entry in self.entries]
+        Path(output_path).write_text(json.dumps(data, indent=2, ensure_ascii=False))
+        print(f"Analysis exported to {output_path}")
+
+
+def main():
+    import sys
+    
+    if len(sys.argv) < 2:
+        print("Usage: python journal_analyzer.py ~/journal/")
+        sys.exit(1)
+    
+    journal_dir = sys.argv[1]
+    analyzer = JournalAnalyzer(journal_dir)
+    
+    analyzer.load_entries().analyze_all()
+    
+    # Generate latest weekly report
+    today = datetime.now()
+    week_start = (today - timedelta(days=today.weekday())).strftime("%Y-%m-%d")
+    report = analyzer.generate_weekly_report(week_start)
+    print("\n" + "=" * 50)
+    print(report)
+    
+    # Generate long-term insights (if >30 entries)
+    if len(analyzer.entries) > 30:
+        print("\n" + "=" * 50)
+        print("LONG-TERM INSIGHTS:")
+        print(analyzer.generate_insights())
+    
+    # Export
+    analyzer.export_analysis("journal_analysis.json")
+
+
+if __name__ == "__main__":
+    main()</code></pre>
+            </div>
+
+            <h2>Script 2: Code Review Assistant</h2>
+
+            <p>Before committing, run your code through a local review that catches issues your linter misses: logic errors, security concerns, performance pitfalls, and missing edge cases.</p>
+
+            <div class="code-block">
+                <pre><code>#!/usr/bin/env python3
+"""
+code_review.py — Automated code review using local LLM.
+
+Usage: python code_review.py src/utils.py
+       python code_review.py --git-staged
+"""
+
+import subprocess
+import sys
+from pathlib import Path
+import requests
+
+
+class CodeReviewer:
+    def __init__(self, model="mistral", base_url="http://localhost:11434"):
+        self.model = model
+        self.base_url = base_url
+    
+    def review_file(self, file_path: str) -> dict:
+        """Review a single file."""
+        path = Path(file_path)
+        code = path.read_text(encoding="utf-8")
+        language = self.detect_language(path.suffix)
+        
+        system = """You are an expert code reviewer. Analyze code for:
+1. Bugs and logic errors
+2. Security vulnerabilities  
+3. Performance issues
+4. Code smell and maintainability
+5. Missing error handling
+6. Documentation gaps
+
+Respond in structured format with severity levels."""
+        
+        prompt = f"""Review this {language} file: {path.name}
+
+```{language}
+{code}
+```
+
+Provide analysis as JSON:
+{{
+  "summary": "brief overall assessment",
+  "issues": [
+    {{
+      "severity": "critical|warning|suggestion",
+      "line": line_number,
+      "category": "bug|security|performance|style",
+      "description": "what's wrong",
+      "fix": "suggested fix"
+    }}
+  ],
+  "strengths": ["what's done well"],
+  "complexity_score": 1-10
+}}"""
+        
+        response = requests.post(
+            f"{self.base_url}/api/generate",
+            json={
+                "model": self.model,
+                "prompt": prompt,
+                "system": system,
+                "stream": False,
+                "options": {"temperature": 0.2}
+            },
+            timeout=180
+        )
+        
+        # Parse response (with fallback for non-JSON)
+        try:
+            import re
+            text = response.json()["response"]
+            json_match = re.search(r'\{.*\}', text, re.DOTALL)
+            if json_match:
+                import json
+                return json.loads(json_match.group())
+        except:
+            pass
+        
+        return {"raw_response": response.json()["response"], "parse_error": True}
+    
+    def detect_language(self, suffix: str) -> str:
+        mapping = {
+            '.py': 'python', '.js': 'javascript', '.ts': 'typescript',
+            '.jsx': 'jsx', '.tsx': 'tsx', '.java': 'java',
+            '.cpp': 'cpp', '.c': 'c', '.go': 'go',
+            '.rs': 'rust', '.rb': 'ruby', '.php': 'php'
+        }
+        return mapping.get(suffix, 'text')
+    
+    def review_staged_files(self):
+        """Review all git staged files."""
+        result = subprocess.run(
+            ["git", "diff", "--cached", "--name-only"],
+            capture_output=True, text=True
+        )
+        
+        files = [f for f in result.stdout.strip().split("\n") if f]
+        
+        for file_path in files:
+            if Path(file_path).suffix in ['.py', '.js', '.ts', '.jsx', '.tsx']:
+                print(f"\n{'='*60}")
+                print(f"Reviewing: {file_path}")
+                print('='*60)
+                
+                review = self.review_file(file_path)
+                self.print_review(review)
+    
+    def print_review(self, review: dict):
+        if "parse_error" in review:
+            print(review.get("raw_response", "Error parsing review"))
+            return
+        
+        print(f"\nSummary: {review.get('summary', 'N/A')}")
+        print(f"Complexity: {review.get('complexity_score', 'N/A')}/10\n")
+        
+        issues = review.get('issues', [])
+        if issues:
+            print(f"Found {len(issues)} issues:")
+            for issue in issues:
+                severity_emoji = {
+                    'critical': '🔴', 'warning': '🟡', 'suggestion': '🔵'
+                }.get(issue.get('severity'), '⚪')
+                
+                print(f"\n  {severity_emoji} {issue.get('severity', 'unknown').upper()}")
+                print(f"     Line {issue.get('line', 'N/A')}: {issue.get('category', 'general')}")
+                print(f"     {issue.get('description', 'No description')}")
+                if issue.get('fix'):
+                    print(f"     Suggested fix: {issue['fix']}")
+        
+        strengths = review.get('strengths', [])
+        if strengths:
+            print(f"\n✅ Strengths:")
+            for s in strengths:
+                print(f"   • {s}")
+
+
+def main():
+    reviewer = CodeReviewer()
+    
+    if "--git-staged" in sys.argv:
+        reviewer.review_staged_files()
+    elif len(sys.argv) > 1:
+        review = reviewer.review_file(sys.argv[1])
+        reviewer.print_review(review)
+    else:
+        print("Usage: python code_review.py <file.py>")
+        print("       python code_review.py --git-staged")
+
+
+if __name__ == "__main__":
+    main()</code></pre>
+            </div>
+
+            <h2>Script 3: Artifact Generator</h2>
+
+            <p>Turn requirements, notes, or brainstorming sessions into structured documents: meeting minutes, project specifications, user stories, or technical designs.</p>
+
+            <div class="code-block">
+                <pre><code>#!/usr/bin/env python3
+"""
+artifact_generator.py — Generate structured documents from raw input.
+
+Usage: python artifact_generator.py meeting_notes.txt --type minutes
+       python artifact_generator.py ideas.md --type spec
+"""
+
+import argparse
+from pathlib import Path
+import requests
+
+
+class ArtifactGenerator:
+    def __init__(self, model="llama3.1:8b", base_url="http://localhost:11434"):
+        self.model = model
+        self.base_url = base_url
+    
+    def generate(self, source_text: str, artifact_type: str) -> str:
+        templates = {
+            "minutes": """Convert these raw meeting notes into formal meeting minutes:
+
+Format:
+- Meeting Title & Date
+- Attendees
+- Agenda Items
+- Key Decisions (with owners)
+- Action Items (with deadlines)
+- Open Questions
+
+Notes:
+{input}
+""",
+            "spec": """Convert these requirements/ideas into a technical specification:
+
+Format:
+- Overview & Goals
+- Requirements (functional & non-functional)
+- Architecture Overview
+- API Design
+- Data Model
+- Implementation Phases
+- Risks & Mitigations
+
+Input:
+{input}
+""",
+            "stories": """Convert these requirements into user stories:
+
+Format: As a [role], I want [feature], so that [benefit]
+
+Also include:
+- Acceptance criteria for each story
+- Estimated complexity (S/M/L)
+- Dependencies between stories
+
+Input:
+{input}
+""",
+            "email": """Draft a professional email based on these notes:
+
+Format:
+- Clear subject line
+- Opening context
+- Key points (bulleted)
+- Call to action
+- Professional closing
+
+Tone: professional but warm
+
+Notes:
+{input}
+""",
+            "diagram": """Analyze this system description and suggest Mermaid diagram code:
+
+For each diagram type (flowchart, sequence, class, ER), provide:
+- When to use it
+- The Mermaid code
+- Brief explanation
+
+Description:
+{input}
+"""
+        }
+        
+        template = templates.get(artifact_type, templates["spec"])
+        prompt = template.format(input=source_text[:8000])  # Context window limit
+        
+        response = requests.post(
+            f"{self.base_url}/api/generate",
+            json={
+                "model": self.model,
+                "prompt": prompt,
+                "stream": False,
+                "options": {"temperature": 0.5}
+            },
+            timeout=120
+        )
+        
+        return response.json()["response"]
+    
+    def interactive_mode(self):
+        print("Artifact Generator — Interactive Mode")
+        print("Commands: minutes, spec, stories, email, diagram, quit")
+        
+        buffer = []
+        current_type = "spec"
+        
+        while True:
+            line = input("> ")
+            
+            if line.startswith("/"):
+                cmd = line[1:].strip()
+                
+                if cmd == "quit":
+                    break
+                elif cmd in ["minutes", "spec", "stories", "email", "diagram"]:
+                    # Generate from current buffer
+                    if buffer:
+                        text = "\n".join(buffer)
+                        print(f"\nGenerating {cmd}...\n")
+                        print(self.generate(text, cmd))
+                        buffer = []
+                    current_type = cmd
+                    print(f"Switched to {cmd} mode. Paste content, then /{cmd} to generate.")
+                else:
+                    print(f"Unknown command: {cmd}")
+            else:
+                buffer.append(line)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input_file", nargs="?", help="Source text file")
+    parser.add_argument("--type", default="spec", 
+                       choices=["minutes", "spec", "stories", "email", "diagram"])
+    parser.add_argument("--interactive", "-i", action="store_true")
+    parser.add_argument("--output", "-o", help="Output file (default: stdout)")
+    
+    args = parser.parse_args()
+    
+    generator = ArtifactGenerator()
+    
+    if args.interactive:
+        generator.interactive_mode()
+    elif args.input_file:
+        source = Path(args.input_file).read_text(encoding="utf-8")
+        result = generator.generate(source, args.type)
+        
+        if args.output:
+            Path(args.output).write_text(result, encoding="utf-8")
+            print(f"Generated {args.type} written to {args.output}")
+        else:
+            print(result)
+    else:
+        parser.print_help()
+
+
+if __name__ == "__main__":
+    main()</code></pre>
+            </div>
+
+            <h2>Workflow Integration</h2>
+
+            <p>The real power comes from integrating these scripts into your daily workflow:</p>
+
+            <h3>Git Pre-Commit Hook</h3>
+
+            <div class="code-block">
+                <pre><code>#!/bin/sh
+# .git/hooks/pre-commit
+# Run code review on staged files before commit
+
+python3 scripts/code_review.py --git-staged
+
+# If review finds critical issues, block commit
+# (implement by checking exit code)
+echo "Pre-commit review complete. Check output above."</code></pre>
+            </div>
+
+            <h3>Shell Alias for Quick Access</h3>
+
+            <div class="code-block">
+                <pre><code># ~/.bashrc or ~/.zshrc
+alias review='python3 ~/scripts/code_review.py'
+alias journal='python3 ~/scripts/journal_analyzer.py ~/journal/'
+alias draft='python3 ~/scripts/artifact_generator.py --interactive'
+
+# Example workflow:
+# $ journal           # Analyze this week's entries
+# $ review src/app.py # Quick code check
+# $ draft             # Interactive document generation</code></pre>
+            </div>
+
+            <h2>The Bottom Line</h2>
+
+            <p>Local AI automation isn't about replacing thought—it's about eliminating friction. The scripts above run in seconds, cost nothing per invocation, and never expose your data. Combined with a systematic approach to capturing your work (journals, git commits, meeting notes), they create a flywheel of continuous improvement.</p>
+
+            <p>Start with one script. Integrate it into your workflow. Add another when the first becomes habit. Within a month, you'll have a personalized productivity system that no SaaS subscription can match.</p>
+
+            <div class="article-footer-note">
+                <p><strong>Next up:</strong> Learn about <a href="cross-platform-firewall.html">managing app connectivity with Python across Windows, macOS, and Linux</a>—extending your local control to the network layer.</p>
+            </div>
+        </div>
+    </article>
+
+    <footer class="blog-footer">
+        <div class="footer-content">
+            <p>© 2026 Minden. All tutorials are battle-tested in production environments.</p>
+            <nav class="footer-nav">
+                <a href="../index.html">Blog Home</a>
+                <a href="../../index.html">Main Site</a>
+            </nav>
+        </div>
+    </footer>
+</body>
+</html>

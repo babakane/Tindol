@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Designing a Multi-Tab TV/Radio Streaming App with Predictive Search</title>
+    <link rel="stylesheet" href="../blog-styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="blog-nav">
+        <a href="../index.html" class="nav-back">← Blog Home</a>
+        <span class="nav-category">Application Design</span>
+    </nav>
+
+    <article class="article-container">
+        <header class="article-header">
+            <span class="article-tag">Architecture</span>
+            <h1>Designing a Multi-Tab TV/Radio Streaming App with Predictive Search and Favorites</h1>
+            <div class="article-meta">
+                <span class="reading-time">14 min read</span>
+                <span class="publish-date">May 2026</span>
+            </div>
+        </header>
+
+        <div class="article-content">
+            <p class="lead">Building a media streaming application that feels intuitive, responsive, and genuinely useful requires more than slapping a video player on a webpage. It demands thoughtful architecture around content discovery, user preferences, and multi-context consumption. This guide walks through designing a modular streaming workspace that handles live TV, radio, curated playlists, and user favorites—with predictive search that actually understands what users want before they finish typing.</p>
+
+            <h2>The Problem with Most Streaming Interfaces</h2>
+
+            <p>Open most streaming apps and you're confronted with an infinite scroll of thumbnails, algorithmic recommendations that miss the mark, and a search function that requires exact spelling. The user experience is optimized for content volume, not user intent.</p>
+
+            <p>When I designed the Minden streaming workspace, I started with a different question: <em>What would this look like if it were designed for a family living room, not an individual phone screen?</em></p>
+
+            <h2>Core Design Principles</h2>
+
+            <ol>
+                <li><strong>Contextual tabs:</strong> Different content types need different browsing paradigms</li>
+                <li><strong>Predictive, not reactive:</strong> Surface content before the user asks</li>
+                <li><strong>Federated search:</strong> One query searches across all sources simultaneously</li>
+                <li><strong>Family-friendly defaults:</strong> Safe content curation as the baseline</li>
+                <li><strong>Offline resilience:</strong> Core functionality works without connectivity</li>
+            </ol>
+
+            <h2>Architecture Overview</h2>
+
+            <div class="code-block no-syntax">
+                <pre><code>┌─────────────────────────────────────────────────────┐
+│                  Streaming Workspace                  │
+├─────────────────────────────────────────────────────┤
+│  Tab Bar: [TV] [Radio] [Music] [Podcasts] [Favorites] │
+├─────────────────────────────────────────────────────┤
+│                                                       │
+│  ┌─────────────┐    ┌─────────────────────────────┐ │
+│  │ Predictive  │    │      Content Grid/Player      │ │
+│  │   Search    │    │                               │ │
+│  │             │    │   ┌─────┐ ┌─────┐ ┌─────┐   │ │
+│  │ ┌─────────┐ │    │   │     │ │     │ │     │   │ │
+│  │ │Query    │ │    │   │ Vid │ │ Vid │ │ Vid │   │ │
+│  │ │Outline  │ │    │   └─────┘ └─────┘ └─────┘   │ │
+│  │ │Panel    │ │    │                               │ │
+│  │ └─────────┘ │    │        [Active Player]          │ │
+│  └─────────────┘    └─────────────────────────────┘ │
+│                                                       │
+└─────────────────────────────────────────────────────┘</code></pre>
+            </div>
+
+            <h2>Implementing the Tab System</h2>
+
+            <p>Each tab represents a distinct content domain with its own data source, browsing pattern, and player requirements. The key insight: tabs share the same shell but load completely independent content modules.</p>
+
+            <div class="code-block">
+                <pre><code>// tab-manager.js
+// Generic tab system with lazy loading and state preservation
+
+class StreamingWorkspace {
+  constructor(container) {
+    this.container = container;
+    this.tabs = new Map();
+    this.activeTab = null;
+    this.tabHistory = []; // For back/forward navigation
+    
+    this.initializeTabs([
+      { id: 'tv', label: 'Live TV', icon: '📺', module: TVModule },
+      { id: 'radio', label: 'Radio', icon: '📻', module: RadioModule },
+      { id: 'music', label: 'Music', icon: '🎵', module: MusicModule },
+      { id: 'podcasts', label: 'Podcasts', icon: '🎙️', module: PodcastModule },
+      { id: 'favorites', label: 'Favorites', icon: '⭐', module: FavoritesModule }
+    ]);
+  }
+  
+  initializeTabs(tabConfigs) {
+    // Build tab bar
+    const tabBar = document.createElement('nav');
+    tabBar.className = 'workspace-tab-bar';
+    
+    tabConfigs.forEach(config => {
+      const button = document.createElement('button');
+      button.className = 'tab-button';
+      button.dataset.tabId = config.id;
+      button.innerHTML = `<span class="tab-icon">${config.icon}</span>
+                          <span class="tab-label">${config.label}</span>`;
+      
+      button.addEventListener('click', () => this.switchTab(config.id));
+      tabBar.appendChild(button);
+      
+      // Register tab module (lazy-loaded)
+      this.tabs.set(config.id, {
+        config,
+        module: null,      // Instantiated on first activation
+        state: {},        // Preserved between switches
+        element: null     // DOM container
+      });
+    });
+    
+    this.container.appendChild(tabBar);
+    
+    // Create content area
+    this.contentArea = document.createElement('main');
+    this.contentArea.className = 'workspace-content';
+    this.container.appendChild(this.contentArea);
+    
+    // Activate first tab
+    this.switchTab(tabConfigs[0].id);
+  }
+  
+  async switchTab(tabId) {
+    if (this.activeTab === tabId) return;
+    
+    const tab = this.tabs.get(tabId);
+    if (!tab) return;
+    
+    // Save current tab state
+    if (this.activeTab) {
+      const current = this.tabs.get(this.activeTab);
+      if (current.module) {
+        current.state = current.module.getState();
+      }
+    }
+    
+    // Update UI
+    this.container.querySelectorAll('.tab-button').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tabId === tabId);
+    });
+    
+    // Lazy-load module on first visit
+    if (!tab.module) {
+      tab.module = new tab.config.module();
+      tab.element = document.createElement('div');
+      tab.element.className = `tab-panel tab-panel-${tabId}`;
+      
+      await tab.module.initialize(tab.element);
+      this.contentArea.appendChild(tab.element);
+    }
+    
+    // Restore state
+    if (Object.keys(tab.state).length > 0) {
+      tab.module.restoreState(tab.state);
+    }
+    
+    // Show active, hide others
+    this.contentArea.querySelectorAll('.tab-panel').forEach(el => {
+      el.classList.toggle('active', el === tab.element);
+    });
+    
+    this.activeTab = tabId;
+    this.tabHistory.push(tabId);
+  }
+  
+  goBack() {
+    if (this.tabHistory.length > 1) {
+      this.tabHistory.pop(); // Remove current
+      const previous = this.tabHistory.pop(); // Get previous
+      if (previous) this.switchTab(previous);
+    }
+  }
+}</code></pre>
+            </div>
+
+            <h2>The TV Module: Live Channel Browsing</h2>
+
+            <p>Live TV requires a channel-first interface, not a content-first one. Users think "I want to watch BBC" not "I want to watch this specific show."</p>
+
+            <div class="code-block">
+                <pre><code>// tv-module.js
+class TVModule {
+  constructor() {
+    this.channels = [];
+    this.categories = ['News', 'Sports', 'Movies', 'Kids', 'Documentary'];
+    this.currentChannel = null;
+    this.epgData = new Map(); // Electronic Program Guide
+  }
+  
+  async initialize(container) {
+    this.container = container;
+    
+    // Build layout: category sidebar + channel grid + player
+    this.container.innerHTML = `
+      <div class="tv-layout">
+        <aside class="category-sidebar">
+          ${this.categories.map(cat => `
+            <button class="category-btn" data-category="${cat}">
+              ${cat}
+            </button>
+          `).join('')}
+        </aside>
+        <div class="channel-browser">
+          <div class="channel-grid"></div>
+          <div class="now-playing-bar">
+            <div class="channel-info">
+              <img class="channel-logo" src="" alt="">
+              <div class="program-info">
+                <h3 class="program-title">Select a channel</h3>
+                <p class="program-time">--:-- - --:--</p>
+              </div>
+            </div>
+            <div class="player-controls">
+              <button class="btn-prev">⏮</button>
+              <button class="btn-play">▶</button>
+              <button class="btn-next">⏭</button>
+              <button class="btn-fav">☆</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    await this.loadChannels();
+    this.attachEventListeners();
+  }
+  
+  async loadChannels() {
+    // In production, this fetches from a curated source
+    // For offline-first, embed a static channel list
+    this.channels = [
+      { id: 'bbc-news', name: 'BBC News', category: 'News', 
+        logo: 'assets/logos/bbc-news.svg', stream: 'https://example.com/bbc-news.m3u8',
+        nowPlaying: { title: 'BBC News at Six', start: '18:00', end: '18:30' }},
+      { id: 'espn', name: 'ESPN', category: 'Sports',
+        logo: 'assets/logos/espn.svg', stream: 'https://example.com/espn.m3u8',
+        nowPlaying: { title: 'NBA Playoffs', start: '19:00', end: '21:30' }},
+      // ... more channels
+    ];
+    
+    this.renderChannels('News'); // Default category
+  }
+  
+  renderChannels(category) {
+    const grid = this.container.querySelector('.channel-grid');
+    const filtered = this.channels.filter(ch => ch.category === category);
+    
+    grid.innerHTML = filtered.map(ch => `
+      <div class="channel-card" data-channel-id="${ch.id}">
+        <img src="${ch.logo}" alt="${ch.name}" loading="lazy">
+        <div class="channel-meta">
+          <h4>${ch.name}</h4>
+          <p class="now-playing">${ch.nowPlaying.title}</p>
+          <span class="time-badge">${ch.nowPlaying.start} - ${ch.nowPlaying.end}</span>
+        </div>
+        ${this.isFavorite(ch.id) ? '<span class="fav-indicator">⭐</span>' : ''}
+      </div>
+    `).join('');
+  }
+  
+  playChannel(channelId) {
+    const channel = this.channels.find(c => c.id === channelId);
+    if (!channel) return;
+    
+    this.currentChannel = channel;
+    
+    // Update player
+    const player = this.container.querySelector('.now-playing-bar');
+    player.querySelector('.channel-logo').src = channel.logo;
+    player.querySelector('.program-title').textContent = channel.nowPlaying.title;
+    player.querySelector('.program-time').textContent = 
+      `${channel.nowPlaying.start} - ${channel.nowPlaying.end}`;
+    
+    // In real implementation, load HLS stream
+    // this.hlsPlayer.loadSource(channel.stream);
+    
+    // Add to watch history for better recommendations
+    this.addToHistory(channel);
+  }
+  
+  isFavorite(channelId) {
+    const favorites = JSON.parse(localStorage.getItem('tv-favorites') || '[]');
+    return favorites.includes(channelId);
+  }
+  
+  toggleFavorite(channelId) {
+    const favorites = JSON.parse(localStorage.getItem('tv-favorites') || '[]');
+    const index = favorites.indexOf(channelId);
+    
+    if (index > -1) {
+      favorites.splice(index, 1);
+    } else {
+      favorites.push(channelId);
+    }
+    
+    localStorage.setItem('tv-favorites', JSON.stringify(favorites));
+    this.renderChannels(this.currentCategory);
+  }
+  
+  addToHistory(channel) {
+    const history = JSON.parse(localStorage.getItem('watch-history') || '[]');
+    history.unshift({ 
+      channelId: channel.id, 
+      timestamp: Date.now(),
+      duration: 0 // Updated on switch
+    });
+    
+    // Keep last 100 entries
+    if (history.length > 100) history.pop();
+    
+    localStorage.setItem('watch-history', JSON.stringify(history));
+  }
+  
+  getState() {
+    return {
+      currentCategory: this.currentCategory,
+      currentChannel: this.currentChannel?.id,
+      scrollPosition: this.container.querySelector('.channel-grid')?.scrollTop
+    };
+  }
+  
+  restoreState(state) {
+    if (state.currentCategory) {
+      this.renderChannels(state.currentCategory);
+    }
+    if (state.currentChannel) {
+      this.playChannel(state.currentChannel);
+    }
+    if (state.scrollPosition) {
+      requestAnimationFrame(() => {
+        this.container.querySelector('.channel-grid').scrollTop = state.scrollPosition;
+      });
+    }
+  }
+}</code></pre>
+            </div>
+
+            <h2>Predictive Search: Understanding Intent</h2>
+
+            <p>Traditional search waits for the user to finish typing, then returns exact matches. Predictive search analyzes partial input, historical behavior, and content metadata to suggest results in real-time.</p>
+
+            <div class="code-block">
+                <pre><code>// predictive-search.js
+class PredictiveSearch {
+  constructor(dataSource, options = {}) {
+    this.dataSource = dataSource;
+    this.minChars = options.minChars || 2;
+    this.maxSuggestions = options.maxSuggestions || 10;
+    this.debounceMs = options.debounceMs || 150;
+    
+    // Trie for prefix matching
+    this.trie = new SearchTrie();
+    // User behavior model
+    this.behaviorModel = new UserBehaviorModel();
+    
+    this.buildIndex();
+  }
+  
+  async buildIndex() {
+    const items = await this.dataSource.getAll();
+    
+    items.forEach(item => {
+      // Index multiple fields
+      const indexable = [
+        item.name,
+        item.description,
+        item.category,
+        item.tags?.join(' '),
+        item.cast?.join(' '),
+        item.genre
+      ].filter(Boolean).join(' ').toLowerCase();
+      
+      // Tokenize and add to trie with item reference
+      const tokens = this.tokenize(indexable);
+      tokens.forEach(token => {
+        this.trie.insert(token, {
+          item,
+          relevance: this.calculateBaseRelevance(item, token)
+        });
+      });
+    });
+  }
+  
+  tokenize(text) {
+    // Normalize: lowercase, remove punctuation, split
+    return text
+      .toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(t => t.length > 1);
+  }
+  
+  calculateBaseRelevance(item, token) {
+    let score = 1.0;
+    
+    // Exact name match is highest relevance
+    if (item.name?.toLowerCase().includes(token)) score *= 3;
+    
+    // Category match
+    if (item.category?.toLowerCase().includes(token)) score *= 2;
+    
+    // Tag match
+    if (item.tags?.some(t => t.toLowerCase().includes(token))) score *= 1.5;
+    
+    // Popularity boost
+    if (item.viewCount) score *= Math.log10(item.viewCount + 1) / 5;
+    
+    return score;
+  }
+  
+  async search(query) {
+    if (query.length < this.minChars) {
+      return this.getDefaultSuggestions();
+    }
+    
+    const normalized = query.toLowerCase().trim();
+    const tokens = this.tokenize(normalized);
+    
+    // Get prefix matches from trie
+    const candidates = new Map();
+    
+    tokens.forEach(token => {
+      const matches = this.trie.prefixSearch(token, 50);
+      
+      matches.forEach(({ item, relevance }) => {
+        const existing = candidates.get(item.id);
+        const adjustedRelevance = relevance * this.behaviorModel.getPersonalizationBoost(item);
+        
+        if (existing) {
+          existing.relevance += adjustedRelevance;
+          existing.matchedTokens.push(token);
+        } else {
+          candidates.set(item.id, {
+            item,
+            relevance: adjustedRelevance,
+            matchedTokens: [token]
+          });
+        }
+      });
+    });
+    
+    // Sort by relevance and diversity
+    const results = Array.from(candidates.values())
+      .sort((a, b) => b.relevance - a.relevance)
+      .slice(0, this.maxSuggestions);
+    
+    return results.map(r => ({
+      ...r.item,
+      relevance: r.relevance,
+      matchedTokens: r.matchedTokens,
+      reason: this.explainMatch(r)
+    }));
+  }
+  
+  explainMatch(result) {
+    const { item, matchedTokens } = result;
+    
+    // Generate human-readable explanation
+    if (item.name.toLowerCase().includes(matchedTokens[0])) {
+      return `Name matches "${matchedTokens[0]}"`;
+    }
+    if (item.category?.toLowerCase().includes(matchedTokens[0])) {
+      return `Category: ${item.category}`;
+    }
+    if (this.behaviorModel.isFrequentlyWatched(item.id)) {
+      return 'Based on your viewing history';
+    }
+    
+    return 'Related content';
+  }
+  
+  getDefaultSuggestions() {
+    // When no query, show trending + personal recommendations
+    return this.behaviorModel.getTopRecommendations(5);
+  }
+  
+  // Debounced search for input events
+  createDebouncedHandler(callback) {
+    let timeout;
+    
+    return (query) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(async () => {
+        const results = await this.search(query);
+        callback(results);
+      }, this.debounceMs);
+    };
+  }
+}</code></pre>
+            </div>
+
+            <h2>The Search Trie: Efficient Prefix Matching</h2>
+
+            <p>The trie (prefix tree) is the engine behind real-time suggestions. It enables O(m) lookup where m is query length, regardless of dictionary size.</p>
+
+            <div class="code-block">
+                <pre><code>// search-trie.js
+class SearchTrie {
+  constructor() {
+    this.root = new TrieNode();
+  }
+  
+  insert(word, data) {
+    let node = this.root;
+    
+    for (const char of word) {
+      if (!node.children.has(char)) {
+        node.children.set(char, new TrieNode());
+      }
+      node = node.children.get(char);
+      
+      // Store up to 100 results per node to prevent memory bloat
+      if (node.results.length < 100) {
+        node.results.push(data);
+      }
+    }
+    
+    node.isEndOfWord = true;
+  }
+  
+  prefixSearch(prefix, limit = 20) {
+    let node = this.root;
+    
+    // Traverse to prefix end
+    for (const char of prefix) {
+      if (!node.children.has(char)) {
+        return []; // No matches
+      }
+      node = node.children.get(char);
+    }
+    
+    // Collect all results from this subtree
+    const results = [];
+    this.collectResults(node, results, limit);
+    
+    return results;
+  }
+  
+  collectResults(node, results, limit) {
+    if (results.length >= limit) return;
+    
+    // Add results at this node
+    for (const data of node.results) {
+      if (results.length >= limit) return;
+      
+      // Deduplicate
+      if (!results.some(r => r.item.id === data.item.id)) {
+        results.push(data);
+      }
+    }
+    
+    // Recurse to children
+    for (const child of node.children.values()) {
+      this.collectResults(child, results, limit);
+    }
+  }
+}
+
+class TrieNode {
+  constructor() {
+    this.children = new Map();
+    this.results = [];
+    this.isEndOfWord = false;
+  }
+}</code></pre>
+            </div>
+
+            <h2>User Behavior Modeling</h2>
+
+            <p>Personalization makes search feel intelligent. The behavior model tracks patterns and boosts relevant content:</p>
+
+            <div class="code-block">
+                <pre><code>// user-behavior.js
+class UserBehaviorModel {
+  constructor() {
+    this.loadFromStorage();
+  }
+  
+  loadFromStorage() {
+    const stored = localStorage.getItem('user-behavior-model');
+    if (stored) {
+      const data = JSON.parse(stored);
+      this.watchHistory = data.watchHistory || [];
+      this.searchHistory = data.searchHistory || [];
+      this.categoryAffinity = data.categoryAffinity || {};
+      this.timePatterns = data.timePatterns || {};
+    } else {
+      this.watchHistory = [];
+      this.searchHistory = [];
+      this.categoryAffinity = {};
+      this.timePatterns = {};
+    }
+  }
+  
+  recordWatch(item, duration) {
+    this.watchHistory.push({
+      itemId: item.id,
+      category: item.category,
+      timestamp: Date.now(),
+      duration,
+      completed: duration > item.duration * 0.8 // Watched >80%
+    });
+    
+    // Update category affinity (exponential decay)
+    const category = item.category;
+    this.categoryAffinity[category] = (this.categoryAffinity[category] || 0) * 0.9 + 1;
+    
+    // Track time-of-day patterns
+    const hour = new Date().getHours();
+    this.timePatterns[hour] = (this.timePatterns[hour] || []).concat(item.category);
+    
+    this.persist();
+  }
+  
+  recordSearch(query, selectedResult) {
+    this.searchHistory.push({
+      query,
+      selectedId: selectedResult?.id,
+      timestamp: Date.now()
+    });
+    
+    // Keep last 100 searches
+    if (this.searchHistory.length > 100) {
+      this.searchHistory.shift();
+    }
+    
+    this.persist();
+  }
+  
+  getPersonalizationBoost(item) {
+    let boost = 1.0;
+    
+    // Category affinity
+    const affinity = this.categoryAffinity[item.category] || 0;
+    boost += Math.log10(affinity + 1) * 0.5;
+    
+    // Time-of-day match
+    const currentHour = new Date().getHours();
+    const typicalCategories = this.timePatterns[currentHour] || [];
+    if (typicalCategories.includes(item.category)) {
+      boost += 0.3;
+    }
+    
+    // Re-watch boost (if watched before, might want again)
+    const watched = this.watchHistory.filter(h => h.itemId === item.id);
+    if (watched.length > 0) {
+      const lastWatch = watched[watched.length - 1];
+      const daysSince = (Date.now() - lastWatch.timestamp) / (1000 * 60 * 60 * 24);
+      
+      // Higher boost if it's been a while (rewatch value)
+      if (daysSince > 7) {
+        boost += Math.min(daysSince / 30, 1.0);
+      }
+    }
+    
+    return boost;
+  }
+  
+  isFrequentlyWatched(itemId) {
+    const count = this.watchHistory.filter(h => h.itemId === itemId).length;
+    return count >= 3;
+  }
+  
+  getTopRecommendations(count = 5) {
+    // Score all categories by affinity, pick top items from each
+    const sortedCategories = Object.entries(this.categoryAffinity)
+      .sort((a, b) => b[1] - a[1])
+      .map(([cat]) => cat);
+    
+    // This would call dataSource in real implementation
+    return []; // Placeholder
+  }
+  
+  persist() {
+    localStorage.setItem('user-behavior-model', JSON.stringify({
+      watchHistory: this.watchHistory.slice(-200), // Keep last 200
+      searchHistory: this.searchHistory,
+      categoryAffinity: this.categoryAffinity,
+      timePatterns: this.timePatterns
+    }));
+  }
+}</code></pre>
+            </div>
+
+            <h2>Content Curation for Families</h2>
+
+            <p>A streaming app for home use must prioritize content safety. This isn't just about blocking adult content—it's about curating a positive, enriching viewing environment.</p>
+
+            <div class="code-block">
+                <pre><code>// content-curator.js
+class FamilyContentCurator {
+  constructor(strictness = 'moderate') {
+    this.strictness = strictness; // 'strict', 'moderate', 'permissive'
+    this.ageRatings = {
+      'strict': ['G', 'TV-Y', 'TV-Y7'],
+      'moderate': ['G', 'PG', 'TV-Y', 'TV-Y7', 'TV-G', 'TV-PG'],
+      'permissive': ['G', 'PG', 'PG-13', 'TV-Y', 'TV-Y7', 'TV-G', 'TV-PG', 'TV-14']
+    };
+    
+    this.blockedKeywords = [
+      'graphic violence', 'explicit', 'mature themes',
+      'strong language', 'substance abuse'
+    ];
+    
+    this.positiveTags = [
+      'educational', 'family-friendly', 'documentary',
+      'nature', 'science', 'history', 'music'
+    ];
+  }
+  
+  evaluateContent(item) {
+    const scores = {
+      ageAppropriate: this.checkAgeRating(item.rating),
+      noBlockedContent: !this.containsBlockedKeywords(item),
+      positiveValue: this.calculatePositiveValue(item),
+      educational: this.isEducational(item),
+      durationAppropriate: this.checkDuration(item.duration)
+    };
+    
+    const totalScore = Object.values(scores).reduce((a, b) => a + b, 0);
+    const maxScore = Object.keys(scores).length;
+    
+    return {
+      approved: totalScore / maxScore >= 0.7,
+      score: totalScore / maxScore,
+      breakdown: scores
+    };
+  }
+  
+  checkAgeRating(rating) {
+    return this.ageRatings[this.strictness].includes(rating) ? 1 : 0;
+  }
+  
+  containsBlockedKeywords(item) {
+    const text = `${item.description} ${item.tags?.join(' ') || ''}`.toLowerCase();
+    return this.blockedKeywords.some(kw => text.includes(kw));
+  }
+  
+  calculatePositiveValue(item) {
+    let score = 0.5; // Neutral base
+    
+    // Boost for positive tags
+    item.tags?.forEach(tag => {
+      if (this.positiveTags.includes(tag.toLowerCase())) {
+        score += 0.1;
+      }
+    });
+    
+    // Boost for educational platforms
+    if (['pbs', 'national geographic', 'bbc learning', 'smithsonian'].includes(
+      item.publisher?.toLowerCase()
+    )) {
+      score += 0.2;
+    }
+    
+    return Math.min(score, 1.0);
+  }
+  
+  isEducational(item) {
+    const eduCategories = ['Documentary', 'Educational', 'Science', 'History'];
+    return eduCategories.includes(item.category) || 
+           item.tags?.some(t => t.toLowerCase().includes('educational'));
+  }
+  
+  checkDuration(duration) {
+    // For kids, shorter is generally better
+    if (this.strictness === 'strict') {
+      return duration <= 30 ? 1 : duration <= 60 ? 0.7 : 0.3;
+    }
+    return duration <= 120 ? 1 : 0.8;
+  }
+}</code></pre>
+            </div>
+
+            <h2>Putting It Together: The Search UI</h2>
+
+            <p>The search interface combines all these components into a fluid, responsive experience:</p>
+
+            <div class="code-block">
+                <pre><code>// search-ui.js
+class StreamingSearchUI {
+  constructor(container, searchEngine, behaviorModel) {
+    this.container = container;
+    this.searchEngine = searchEngine;
+    this.behaviorModel = behaviorModel;
+    
+    this.buildInterface();
+  }
+  
+  buildInterface() {
+    this.container.innerHTML = `
+      <div class="search-workspace">
+        <div class="search-input-wrapper">
+          <input type="text" 
+                 class="search-input" 
+                 placeholder="Search TV, radio, music, podcasts..."
+                 autocomplete="off">
+          <span class="search-icon">🔍</span>
+        </div>
+        
+        <div class="search-results">
+          <div class="results-column suggestions">
+            <h3>Suggestions</h3>
+            <div class="suggestion-list"></div>
+          </div>
+          
+          <div class="results-column preview">
+            <h3>Preview</h3>
+            <div class="preview-panel"></div>
+          </div>
+          
+          <div class="results-column history">
+            <h3>Recent</h3>
+            <div class="history-list"></div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    this.input = this.container.querySelector('.search-input');
+    this.suggestionList = this.container.querySelector('.suggestion-list');
+    this.previewPanel = this.container.querySelector('.preview-panel');
+    this.historyList = this.container.querySelector('.history-list');
+    
+    this.attachListeners();
+    this.renderHistory();
+  }
+  
+  attachListeners() {
+    const debouncedSearch = this.searchEngine.createDebouncedHandler(
+      (results) => this.renderSuggestions(results)
+    );
+    
+    this.input.addEventListener('input', (e) => {
+      const query = e.target.value;
+      
+      if (query.length === 0) {
+        this.showDefaultView();
+      } else {
+        debouncedSearch(query);
+      }
+    });
+    
+    this.input.addEventListener('focus', () => {
+      this.container.classList.add('search-active');
+    });
+    
+    // Keyboard navigation
+    this.input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        this.closeSearch();
+      }
+    });
+  }
+  
+  renderSuggestions(results) {
+    this.suggestionList.innerHTML = results.map((item, index) => `
+      <div class="suggestion-item" data-index="${index}" data-id="${item.id}">
+        <img src="${item.thumbnail}" alt="" class="suggestion-thumb" loading="lazy">
+        <div class="suggestion-meta">
+          <span class="suggestion-name">${this.highlightMatch(item.name, item.matchedTokens)}</span>
+          <span class="suggestion-category">${item.category}</span>
+          <span class="suggestion-reason">${item.reason}</span>
+        </div>
+        <span class="suggestion-type">${this.getTypeIcon(item.type)}</span>
+      </div>
+    `).join('');
+    
+    // Click handlers
+    this.suggestionList.querySelectorAll('.suggestion-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const item = results[parseInt(el.dataset.index)];
+        this.selectResult(item);
+      });
+      
+      el.addEventListener('mouseenter', () => {
+        const item = results[parseInt(el.dataset.index)];
+        this.renderPreview(item);
+      });
+    });
+  }
+  
+  renderPreview(item) {
+    this.previewPanel.innerHTML = `
+      <div class="preview-card">
+        <img src="${item.thumbnail}" alt="${item.name}" class="preview-image">
+        <div class="preview-info">
+          <h4>${item.name}</h4>
+          <p class="preview-meta">${item.category} • ${item.duration} min</p>
+          <p class="preview-description">${item.description}</p>
+          <div class="preview-tags">
+            ${item.tags?.map(t => `<span class="tag">${t}</span>`).join('') || ''}
+          </div>
+          <div class="preview-actions">
+            <button class="btn-play-preview">▶ Play</button>
+            <button class="btn-add-fav">☆ Favorite</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  
+  selectResult(item) {
+    this.behaviorModel.recordSearch(this.input.value, item);
+    
+    // Navigate to appropriate tab and play
+    if (item.type === 'tv') {
+      window.workspace.switchTab('tv');
+      // TVModule.playChannel(item.id);
+    } else if (item.type === 'radio') {
+      window.workspace.switchTab('radio');
+    }
+    
+    this.closeSearch();
+  }
+  
+  highlightMatch(text, tokens) {
+    let result = text;
+    tokens?.forEach(token => {
+      const regex = new RegExp(`(${token})`, 'gi');
+      result = result.replace(regex, '<mark>$1</mark>');
+    });
+    return result;
+  }
+  
+  getTypeIcon(type) {
+    return { tv: '📺', radio: '📻', music: '🎵', podcast: '🎙️' }[type] || '📄';
+  }
+  
+  renderHistory() {
+    const history = this.behaviorModel.searchHistory.slice(-10).reverse();
+    
+    this.historyList.innerHTML = history.map(h => `
+      <div class="history-item" data-query="${h.query}">
+        <span class="history-query">${h.query}</span>
+        <span class="history-time">${this.formatTime(h.timestamp)}</span>
+      </div>
+    `).join('');
+  }
+  
+  formatTime(timestamp) {
+    const diff = Date.now() - timestamp;
+    const minutes = Math.floor(diff / 60000);
+    
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (minutes < 1440) return `${Math.floor(minutes / 60)}h ago`;
+    return `${Math.floor(minutes / 1440)}d ago`;
+  }
+  
+  closeSearch() {
+    this.input.value = '';
+    this.container.classList.remove('search-active');
+    this.showDefaultView();
+  }
+  
+  showDefaultView() {
+    // Show trending and recommendations when no query
+    const defaults = this.searchEngine.getDefaultSuggestions();
+    this.renderSuggestions(defaults);
+  }
+}</code></pre>
+            </div>
+
+            <h2>Scaling to Production</h2>
+
+            <p>This architecture scales through several strategies:</p>
+
+            <ul>
+                <li><strong>Worker offloading:</strong> Run search indexing in Web Workers to prevent UI blocking</li>
+                <li><strong>Incremental updates:</strong> Update the trie incrementally as new content arrives</li>
+                <li><strong>Lazy loading:</strong> Only load tab modules when first activated</li>
+                <li><strong>Virtual scrolling:</strong> Render only visible grid items</li>
+                <li><strong>Service Worker caching:</strong> Cache search index and thumbnails for offline use</li>
+            </ul>
+
+            <div class="article-footer-note">
+                <p><strong>Next up:</strong> Learn about <a href="minimal-python-automation.html">lightweight Python scripts for productivity with Ollama and local models</a>—bringing AI capabilities to your daily workflow without cloud dependency.</p>
+            </div>
+        </div>
+    </article>
+
+    <footer class="blog-footer">
+        <div class="footer-content">
+            <p>© 2026 Minden. All tutorials are battle-tested in production environments.</p>
+            <nav class="footer-nav">
+                <a href="../index.html">Blog Home</a>
+                <a href="../../index.html">Main Site</a>
+            </nav>
+        </div>
+    </footer>
+</body>
+</html>
