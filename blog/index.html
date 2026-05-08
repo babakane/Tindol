@@ -3,6 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="In-depth tutorials, architecture guides, and practical implementations for developers and technical writers. Built by Minden.">
+    <meta property="og:title" content="Minden Blog — Tutorials & Articles">
+    <meta property="og:description" content="In-depth tutorials, architecture guides, and practical implementations for developers and technical writers.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://babakane.github.io/Minden/blog/">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Minden Blog">
+    <meta name="twitter:description" content="In-depth tutorials, architecture guides, and practical implementations for developers.">
     <title>Minden Blog — Tutorials & Articles</title>
     <link rel="stylesheet" href="blog-styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,6 +22,27 @@
             <h1>Minden Blog</h1>
             <p>In-depth tutorials, architecture guides, and practical implementations for developers and technical writers.</p>
         </header>
+
+        <div class="blog-controls">
+            <div class="blog-search-wrap">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="search" id="blog-search" placeholder="Search articles..." autocomplete="off">
+            </div>
+            <div class="blog-filters">
+                <button class="filter-btn active" data-category="all">All</button>
+                <button class="filter-btn" data-category="Security">Security</button>
+                <button class="filter-btn" data-category="System Administration">System Admin</button>
+                <button class="filter-btn" data-category="Architecture">Architecture</button>
+                <button class="filter-btn" data-category="Application Design">App Design</button>
+                <button class="filter-btn" data-category="Automation">Automation</button>
+                <button class="filter-btn" data-category="Cross-Platform">Cross-Platform</button>
+                <button class="filter-btn" data-category="Product Design">Product Design</button>
+                <button class="filter-btn" data-category="Machine Learning">ML</button>
+                <button class="filter-btn" data-category="Software Design">Software</button>
+                <button class="filter-btn" data-category="Creative Tools">Creative</button>
+                <span class="article-count" id="article-count">10 articles</span>
+            </div>
+        </div>
 
         <div class="article-list">
             <a href="articles/secure-api-keys-vite-react.html" class="article-card">
@@ -116,5 +145,6 @@
             </nav>
         </div>
     </footer>
+    <script src="blog.js"></script>
 </body>
 </html>

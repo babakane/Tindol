@@ -571,6 +571,153 @@ body {
 }
 
 /* ═══════════════════════════════════════════ */
+/* SEARCH & FILTERS                           */
+/* ═══════════════════════════════════════════ */
+.blog-controls {
+    max-width: var(--max-width-wide);
+    margin: 0 auto var(--space-2xl);
+    padding: 0 var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+.blog-search-wrap {
+    position: relative;
+    max-width: 480px;
+    width: 100%;
+}
+
+.blog-search-wrap svg {
+    position: absolute;
+    left: var(--space-md);
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-muted);
+    pointer-events: none;
+}
+
+#blog-search {
+    width: 100%;
+    padding: var(--space-md) var(--space-md) var(--space-md) 44px;
+    font-family: var(--font-sans);
+    font-size: 15px;
+    color: var(--color-text);
+    background: var(--color-surface);
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+#blog-search:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+#blog-search::placeholder {
+    color: var(--color-text-muted);
+}
+
+.blog-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    align-items: center;
+}
+
+.filter-btn {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: var(--space-xs) var(--space-md);
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+}
+
+.filter-btn.active {
+    background: var(--color-accent);
+    color: #fff;
+    border-color: var(--color-accent);
+}
+
+.article-count {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════ */
+/* COPY TO CLIPBOARD BUTTON                   */
+/* ═══════════════════════════════════════════ */
+.code-block {
+    position: relative;
+}
+
+.copy-btn {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: rgba(48, 54, 61, 0.8);
+    color: #8b949e;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(4px);
+}
+
+.code-block:hover .copy-btn {
+    opacity: 1;
+}
+
+.copy-btn:hover {
+    background: rgba(48, 54, 61, 1);
+    color: #fff;
+}
+
+.copy-btn.copied {
+    background: var(--color-success);
+    color: #fff;
+    opacity: 1;
+}
+
+.code-block.no-syntax .copy-btn {
+    background: var(--color-border);
+    color: var(--color-text-muted);
+}
+
+.code-block.no-syntax .copy-btn:hover {
+    background: var(--color-text-muted);
+    color: var(--color-text);
+}
+
+.code-block.no-syntax .copy-btn.copied {
+    background: var(--color-success);
+    color: #fff;
+}
+
+/* ═══════════════════════════════════════════ */
 /* BLOG INDEX PAGE - Modern Magazine Style    */
 /* ═══════════════════════════════════════════ */
 .blog-index {
@@ -834,6 +981,31 @@ body {
     
     .article-footer-note {
         padding: var(--space-lg);
+    }
+
+    .blog-controls {
+        padding: 0 var(--space-md);
+    }
+
+    .blog-filters {
+        gap: var(--space-xs);
+    }
+
+    .filter-btn {
+        font-size: 11px;
+        padding: 6px 10px;
+    }
+
+    .article-count {
+        width: 100%;
+        margin-left: 0;
+        margin-top: var(--space-sm);
+    }
+
+    .copy-btn {
+        opacity: 0.7;
+        width: 28px;
+        height: 28px;
     }
 }
 
