@@ -1,5 +1,5 @@
 /**
- * Minden Landing Page Scripts
+ * Tindol Landing Page Scripts
  * - Mobile nav toggle
  * - Scroll reveal animations
  * - Nav scroll shadow

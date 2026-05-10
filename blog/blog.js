@@ -1,5 +1,5 @@
 /**
- * Minden Blog Shared Scripts
+ * Tindol Blog Shared Scripts
  * - Copy-to-clipboard for code blocks
  * - Sticky nav scroll shadow
  * - Search & category filtering (index page)

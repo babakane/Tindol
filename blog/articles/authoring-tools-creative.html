@@ -349,7 +349,7 @@ class CreativeWorkspace:
     
     def __init__(self):
         st.set_page_config(
-            page_title="Minden Creative Workspace",
+            page_title="Tindol Creative Workspace",
             layout="wide",
             initial_sidebar_state="expanded"
         )
@@ -360,7 +360,7 @@ class CreativeWorkspace:
         """Load existing document or create new."""
         if 'document' not in st.session_state:
             # Try to load from workspace directory
-            workspace_dir = Path.home() / '.minden' / 'workspace'
+            workspace_dir = Path.home() / '.tindol' / 'workspace'
             workspace_dir.mkdir(parents=True, exist_ok=True)
             
             # List existing documents
@@ -388,7 +388,7 @@ class CreativeWorkspace:
     def _sidebar(self):
         """Navigation and metadata sidebar."""
         with st.sidebar:
-            st.title("Minden Workspace")
+            st.title("Tindol Workspace")
             
             # Document metadata
             self.doc.title = st.text_input("Title", self.doc.title)
@@ -581,7 +581,7 @@ class CreativeWorkspace:
     
     def _save(self):
         """Persist document to disk."""
-        workspace_dir = Path.home() / '.minden' / 'workspace'
+        workspace_dir = Path.home() / '.tindol' / 'workspace'
         workspace_dir.mkdir(parents=True, exist_ok=True)
         
         filename = f"{self.doc.title.replace(' ', '_').lower()}.json"
@@ -668,7 +668,7 @@ if __name__ == '__main__':
 
     <footer class="blog-footer">
         <div class="footer-content">
-            <p>© 2026 Minden. All tutorials are battle-tested in production environments.</p>
+            <p>© 2026 Tindol. All tutorials are battle-tested in production environments.</p>
             <nav class="footer-nav">
                 <a href="../index.html">Blog Home</a>
                 <a href="../../index.html">Main Site</a>
