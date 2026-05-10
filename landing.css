@@ -876,6 +876,251 @@ body {
     }
 }
 
+/* ═══════════════════════════════════════════ */
+/* NEWSLETTER                               */
+/* ═══════════════════════════════════════════ */
+.newsletter-section {
+    background: linear-gradient(135deg, var(--surface-2) 0%, var(--surface) 100%);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
+.newsletter-form {
+    display: flex;
+    gap: 12px;
+    max-width: 480px;
+    margin: 32px auto 0;
+}
+
+.newsletter-form input[type="email"] {
+    flex: 1;
+    padding: 14px 18px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.newsletter-form input[type="email"]:focus {
+    border-color: var(--accent);
+}
+
+.newsletter-form button {
+    padding: 14px 24px;
+    white-space: nowrap;
+}
+
+.newsletter-privacy {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 16px;
+}
+
+/* ═══════════════════════════════════════════ */
+/* DARK MODE TOGGLE                         */
+/* ═══════════════════════════════════════════ */
+.theme-toggle {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 8px 12px;
+    cursor: pointer;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.theme-toggle:hover {
+    border-color: var(--accent);
+}
+
+/* Dark mode colors */
+[data-theme="dark"] {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface-2: #252525;
+    --text: #f5f5f5;
+    --text-secondary: #a0a0a0;
+    --text-muted: #666;
+    --border: #333;
+    --border-light: #2a2a2a;
+    --accent-soft: rgba(59, 130, 246, 0.15);
+}
+
+/* ═══════════════════════════════════════════ */
+/* READING PROGRESS BAR                     */
+/* ═══════════════════════════════════════════ */
+.reading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--success));
+    z-index: 1001;
+    transition: width 0.1s linear;
+}
+
+/* ═══════════════════════════════════════════ */
+/* TABLE OF CONTENTS                        */
+/* ═══════════════════════════════════════════ */
+.article-toc {
+    position: sticky;
+    top: 100px;
+    max-height: calc(100vh - 140px);
+    overflow-y: auto;
+    padding: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+}
+
+.article-toc h4 {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+}
+
+.article-toc ul {
+    list-style: none;
+}
+
+.article-toc li {
+    margin-bottom: 8px;
+}
+
+.article-toc a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    display: block;
+    padding: 4px 0;
+    transition: color 0.2s ease;
+}
+
+.article-toc a:hover,
+.article-toc a.active {
+    color: var(--accent);
+}
+
+/* ═══════════════════════════════════════════ */
+/* RELATED ARTICLES                         */
+/* ═══════════════════════════════════════════ */
+.related-articles {
+    margin-top: 64px;
+    padding-top: 48px;
+    border-top: 1px solid var(--border);
+}
+
+.related-articles h3 {
+    font-size: 20px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.related-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+/* ═══════════════════════════════════════════ */
+/* ANCHOR LINKS                             */
+/* ═══════════════════════════════════════════ */
+.heading-anchor {
+    opacity: 0;
+    margin-left: 8px;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: opacity 0.2s ease;
+}
+
+h2:hover .heading-anchor,
+h3:hover .heading-anchor {
+    opacity: 1;
+}
+
+/* ═══════════════════════════════════════════ */
+/* SERIES/COLLECTIONS                       */
+/* ═══════════════════════════════════════════ */
+.series-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 16px;
+}
+
+.series-nav {
+    display: flex;
+    gap: 12px;
+    margin-top: 32px;
+    padding: 20px;
+    background: var(--surface-2);
+    border-radius: var(--radius-md);
+}
+
+.series-nav a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.series-nav a.current {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════ */
+/* RSS LINK                                 */
+/* ═══════════════════════════════════════════ */
+.rss-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+    text-decoration: none;
+}
+
+.rss-link:hover {
+    color: var(--accent);
+}
+
+/* ═══════════════════════════════════════════ */
+/* ACCOUNT PAGE STYLES                      */
+/* ═══════════════════════════════════════════ */
+.account-section {
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.account-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 40px;
+    margin-top: 32px;
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
@@ -883,4 +1128,22 @@ body {
         transition-duration: 0.01ms !important;
     }
     html { scroll-behavior: auto; }
+}
+
+/* Responsive for new components */
+@media (max-width: 768px) {
+    .newsletter-form {
+        flex-direction: column;
+    }
+    
+    .related-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .article-toc {
+        position: relative;
+        top: 0;
+        max-height: none;
+        margin-bottom: 32px;
+    }
 }

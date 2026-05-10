@@ -4,10 +4,85 @@
  * - Scroll reveal animations
  * - Nav scroll shadow
  * - Article preview population
+ * - Dark mode toggle
+ * - Newsletter signup
+ * - Reading progress bar
  */
 
 (function () {
     'use strict';
+
+    /* ═══════════════════════════════════════════ */
+    /* DARK MODE TOGGLE                           */
+    /* ═══════════════════════════════════════════ */
+    const themeToggle = document.getElementById('themeToggle');
+    const html = document.documentElement;
+    
+    // Check for saved theme preference
+    const savedTheme = localStorage.getItem('tindol-theme');
+    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        html.setAttribute('data-theme', 'dark');
+    }
+    
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            const isDark = html.getAttribute('data-theme') === 'dark';
+            if (isDark) {
+                html.removeAttribute('data-theme');
+                localStorage.setItem('tindol-theme', 'light');
+            } else {
+                html.setAttribute('data-theme', 'dark');
+                localStorage.setItem('tindol-theme', 'dark');
+            }
+        });
+    }
+
+    /* ═══════════════════════════════════════════ */
+    /* NEWSLETTER SIGNUP                          */
+    /* ═══════════════════════════════════════════ */
+    const newsletterForm = document.getElementById('newsletterForm');
+    if (newsletterForm) {
+        newsletterForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('emailInput').value;
+            // Store locally for demo (replace with actual service)
+            const subscribers = JSON.parse(localStorage.getItem('tindol-subscribers') || '[]');
+            subscribers.push({ email, date: new Date().toISOString() });
+            localStorage.setItem('tindol-subscribers', JSON.stringify(subscribers));
+            
+            // Show success message
+            const btn = newsletterForm.querySelector('button');
+            const originalText = btn.textContent;
+            btn.textContent = 'Subscribed!';
+            btn.disabled = true;
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.disabled = false;
+                newsletterForm.reset();
+            }, 2000);
+        });
+    }
+
+    /* ═══════════════════════════════════════════ */
+    /* READING PROGRESS BAR                       */
+    /* ═══════════════════════════════════════════ */
+    const progressBar = document.createElement('div');
+    progressBar.className = 'reading-progress';
+    document.body.prepend(progressBar);
+    
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+        if (!ticking) {
+            requestAnimationFrame(() => {
+                const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+                const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+                const scrolled = (winScroll / height) * 100;
+                progressBar.style.width = scrolled + '%';
+                ticking = false;
+            });
+            ticking = true;
+        }
+    }, { passive: true });
 
     /* ═══════════════════════════════════════════ */
     /* MOBILE NAV TOGGLE                          */

@@ -14,6 +14,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div class="reading-progress"></div>
+    
     <nav class="site-nav" id="siteNav">
         <div class="nav-inner">
             <a href="./" class="nav-logo">Tindol</a>
@@ -23,6 +25,9 @@
                 <a href="./index.html#articles">Articles</a>
                 <a href="./membership.html">Membership</a>
                 <a href="./blog/index.html" class="nav-cta">Blog</a>
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                </button>
             </div>
             <button class="nav-mobile-toggle" id="navToggle" aria-label="Toggle menu">
                 <span></span><span></span><span></span>
@@ -176,6 +181,10 @@
                     <h4>Connect</h4>
                     <a href="https://github.com/babakane/Tindol" target="_blank" rel="noopener">GitHub</a>
                     <a href="./blog/index.html">Free Articles</a>
+                    <a href="./feed.xml" class="rss-link">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>
+                        RSS Feed
+                    </a>
                 </div>
             </div>
         </div>

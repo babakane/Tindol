@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+    <title>Tindol Research</title>
+    <link>https://babakane.github.io/Tindol/</link>
+    <description>Deep-dive research on modern computing patterns, architectures, and practical implementations. Free articles for everyone, premium insights for members.</description>
+    <language>en</language>
+    <lastBuildDate>Sun, 10 May 2026 00:00:00 GMT</lastBuildDate>
+    <atom:link href="https://babakane.github.io/Tindol/feed.xml" rel="self" type="application/rss+xml"/>
+    
+    <item>
+        <title>How to Securely Store API Keys in Vite + React with .env.local</title>
+        <link>https://babakane.github.io/Tindol/blog/articles/secure-api-keys-vite-react.html</link>
+        <guid>https://babakane.github.io/Tindol/blog/articles/secure-api-keys-vite-react.html</guid>
+        <pubDate>Sun, 10 May 2026 00:00:00 GMT</pubDate>
+        <category>Security</category>
+        <description>Professional patterns for handling secrets in modern frontend applications. Covers .env.local, .gitignore, and safe API key usage in Vite + React.</description>
+    </item>
+    
+    <item>
+        <title>Building a Single-File Python App to Control Internet Access per Application</title>
+        <link>https://babakane.github.io/Tindol/blog/articles/python-network-isolation.html</link>
+        <guid>https://babakane.github.io/Tindol/blog/articles/python-network-isolation.html</guid>
+        <pubDate>Sun, 10 May 2026 00:00:00 GMT</pubDate>
+        <category>System Administration</category>
+        <description>Cross-platform Python GUI for toggling network access per application. Covers PySide6, firewall integration, and offline/online profiles.</description>
+    </item>
+    
+    <item>
+        <title>Running PWAs Locally Without a Server</title>
+        <link>https://babakane.github.io/Tindol/blog/articles/offline-first-pwa.html</link>
+        <guid>https://babakane.github.io/Tindol/blog/articles/offline-first-pwa.html</guid>
+        <pubDate>Sun, 10 May 2026 00:00:00 GMT</pubDate>
+        <category>Architecture</category>
+        <description>Offline-first principles and packaging browser apps for disconnected environments. Learn to run PWAs without a server.</description>
+    </item>
+    
+    <item>
+        <title>Designing a Multi-Tab TV/Radio Streaming App with Predictive Search and Favorites</title>
+        <link>https://babakane.github.io/Tindol/blog/articles/modular-streaming-workspace.html</link>
+        <guid>https://babakane.github.io/Tindol/blog/articles/modular-streaming-workspace.html</guid>
+        <pubDate>Sun, 10 May 2026 00:00:00 GMT</pubDate>
+        <category>Application Design</category>
+        <description>Modular architecture for media streaming with predictive search and favorites. Family-friendly design patterns.</description>
+    </item>
+    
+    <item>
+        <title>Lightweight Python Scripts for Productivity with Ollama and Local Models</title>
+        <link>https://babakane.github.io/Tindol/blog/articles/minimal-python-automation.html</link>
+        <guid>https://babakane.github.io/Tindol/blog/articles/minimal-python-automation.html</guid>
+        <pubDate>Sun, 10 May 2026 00:00:00 GMT</pubDate>
+        <category>Automation</category>
+        <description>Build productivity tools using Python and Ollama — completely offline and private. Journaling, code review, and artifact generation.</description>
+    </item>
+    
+    <item>
+        <title>Managing App Connectivity with Python Across Windows, macOS, and Linux</title>
+        <link>https://babakane.github.io/Tindol/blog/articles/cross-platform-firewall.html</link>
+        <guid>https://babakane.github.io/Tindol/blog/articles/cross-platform-firewall.html</guid>
+        <pubDate>Sun, 10 May 2026 00:00:00 GMT</pubDate>
+        <category>Cross-Platform</category>
+        <description>Unified Python abstraction for application-level network control. Covers iptables, pf, Windows Firewall, and testing strategies.</description>
+    </item>
+    
+    <item>
+        <title>Architecting Safe Streaming Experiences for Home Use</title>
+        <link>https://babakane.github.io/Tindol/blog/articles/curated-family-media.html</link>
+        <guid>https://babakane.github.io/Tindol/blog/articles/curated-family-media.html</guid>
+        <pubDate>Sun, 10 May 2026 00:00:00 GMT</pubDate>
+        <category>Product Design</category>
+        <description>Design streaming interfaces that prioritize child safety and content quality over algorithmic engagement.</description>
+    </item>
+    
+    <item>
+        <title>Implementing Smart Search and Favorites in Python/Streamlit</title>
+        <link>https://babakane.github.io/Tindol/blog/articles/predictive-search-media.html</link>
+        <guid>https://babakane.github.io/Tindol/blog/articles/predictive-search-media.html</guid>
+        <pubDate>Sun, 10 May 2026 00:00:00 GMT</pubDate>
+        <category>Machine Learning</category>
+        <description>Production-ready predictive search with query embedding, user behavior modeling, and real-time personalization.</description>
+    </item>
+    
+    <item>
+        <title>Why and How to Build Robust Single-File Python Apps</title>
+        <link>https://babakane.github.io/Tindol/blog/articles/single-file-python.html</link>
+        <guid>https://babakane.github.io/Tindol/blog/articles/single-file-python.html</guid>
+        <pubDate>Sun, 10 May 2026 00:00:00 GMT</pubDate>
+        <category>Architecture</category>
+        <description>The art of the single-file Python application. When it makes sense, when it breaks down, and how to build robust systems within the constraint.</description>
+    </item>
+    
+    <item>
+        <title>Building All-in-One Creative Workspaces for Books, Articles, and Media</title>
+        <link>https://babakane.github.io/Tindol/blog/articles/authoring-tools-creative.html</link>
+        <guid>https://babakane.github.io/Tindol/blog/articles/authoring-tools-creative.html</guid>
+        <pubDate>Sun, 10 May 2026 00:00:00 GMT</pubDate>
+        <category>Creative Tools</category>
+        <description>Unified creative workspace architecture for content production. From first draft to final export in one environment.</description>
+    </item>
+</channel>
+</rss>

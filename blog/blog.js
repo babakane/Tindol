@@ -3,10 +3,139 @@
  * - Copy-to-clipboard for code blocks
  * - Sticky nav scroll shadow
  * - Search & category filtering (index page)
+ * - Dark mode toggle
+ * - Reading progress bar
+ * - Table of contents
+ * - Anchor links for headings
+ * - Related articles
  */
 
 (function () {
     'use strict';
+
+    /* ═══════════════════════════════════════════ */
+    /* DARK MODE TOGGLE                           */
+    /* ═══════════════════════════════════════════ */
+    function initDarkMode() {
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+        
+        const savedTheme = localStorage.getItem('tindol-theme');
+        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            html.setAttribute('data-theme', 'dark');
+        }
+        
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => {
+                const isDark = html.getAttribute('data-theme') === 'dark';
+                if (isDark) {
+                    html.removeAttribute('data-theme');
+                    localStorage.setItem('tindol-theme', 'light');
+                } else {
+                    html.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('tindol-theme', 'dark');
+                }
+            });
+        }
+    }
+
+    /* ═══════════════════════════════════════════ */
+    /* READING PROGRESS BAR                       */
+    /* ═══════════════════════════════════════════ */
+    function initReadingProgress() {
+        const progressBar = document.querySelector('.reading-progress');
+        if (!progressBar) return;
+        
+        let ticking = false;
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                requestAnimationFrame(() => {
+                    const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+                    const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+                    const scrolled = (winScroll / height) * 100;
+                    progressBar.style.width = scrolled + '%';
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        }, { passive: true });
+    }
+
+    /* ═══════════════════════════════════════════ */
+    /* TABLE OF CONTENTS                          */
+    /* ═══════════════════════════════════════════ */
+    function initTableOfContents() {
+        const tocContainer = document.getElementById('toc');
+        const content = document.querySelector('.article-content');
+        if (!tocContainer || !content) return;
+        
+        const headings = content.querySelectorAll('h2, h3');
+        if (headings.length === 0) return;
+        
+        const tocList = document.createElement('ul');
+        headings.forEach((heading, index) => {
+            const id = heading.id || `section-${index}`;
+            heading.id = id;
+            
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.href = `#${id}`;
+            a.textContent = heading.textContent;
+            a.dataset.target = id;
+            
+            if (heading.tagName === 'H3') {
+                li.style.paddingLeft = '12px';
+            }
+            
+            li.appendChild(a);
+            tocList.appendChild(li);
+        });
+        
+        tocContainer.innerHTML = '<h4>Contents</h4>';
+        tocContainer.appendChild(tocList);
+        
+        // Highlight active section
+        const tocLinks = tocContainer.querySelectorAll('a');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    tocLinks.forEach(link => link.classList.remove('active'));
+                    const activeLink = tocContainer.querySelector(`a[data-target="${entry.target.id}"]`);
+                    if (activeLink) activeLink.classList.add('active');
+                }
+            });
+        }, { rootMargin: '-20% 0% -80% 0%' });
+        
+        headings.forEach(heading => observer.observe(heading));
+    }
+
+    /* ═══════════════════════════════════════════ */
+    /* ANCHOR LINKS FOR HEADINGS                  */
+    /* ═══════════════════════════════════════════ */
+    function initAnchorLinks() {
+        const content = document.querySelector('.article-content');
+        if (!content) return;
+        
+        const headings = content.querySelectorAll('h2, h3');
+        headings.forEach(heading => {
+            if (!heading.id) return;
+            
+            const anchor = document.createElement('a');
+            anchor.href = `#${heading.id}`;
+            anchor.className = 'heading-anchor';
+            anchor.innerHTML = '#';
+            anchor.title = 'Copy link to this section';
+            
+            anchor.addEventListener('click', (e) => {
+                e.preventDefault();
+                navigator.clipboard.writeText(window.location.href.split('#')[0] + '#' + heading.id);
+                anchor.textContent = 'copied!';
+                setTimeout(() => anchor.textContent = '#', 1500);
+            });
+            
+            heading.appendChild(anchor);
+        });
+    }
 
     /* ═══════════════════════════════════════════ */
     /* COPY TO CLIPBOARD FOR CODE BLOCKS          */
@@ -115,11 +244,19 @@
     /* ═══════════════════════════════════════════ */
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
+            initDarkMode();
+            initReadingProgress();
+            initTableOfContents();
+            initAnchorLinks();
             initCopyButtons();
             initNavScroll();
             initBlogFilters();
         });
     } else {
+        initDarkMode();
+        initReadingProgress();
+        initTableOfContents();
+        initAnchorLinks();
         initCopyButtons();
         initNavScroll();
         initBlogFilters();
