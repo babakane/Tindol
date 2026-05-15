@@ -240,6 +240,34 @@
     }
 
     /* ═══════════════════════════════════════════ */
+    /* TIP JAR / BUY ME A COFFEE WIDGET           */
+    /* ═══════════════════════════════════════════ */
+    function initTipJar() {
+        const content = document.querySelector('.article-content');
+        if (!content) return;
+
+        const tipJarHTML = `
+            <div class="tip-jar-widget" style="margin-top: 60px; padding: 30px; background: var(--bg-alt); border-radius: 12px; text-align: center; border: 1px solid var(--border-light);">
+                <h3 style="margin-bottom: 12px; font-size: 20px;">Found this useful?</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 15px;">We publish our research and architectures for free. If this saved you time, consider supporting our work.</p>
+                <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                    <a href="https://buy.stripe.com/test_TIP_5" target="_blank" class="btn btn-ghost" style="border-color: #10b981; color: #10b981;">☕ Tip $5</a>
+                    <a href="https://buy.stripe.com/test_TIP_15" target="_blank" class="btn btn-ghost" style="border-color: #3b82f6; color: #3b82f6;">🚀 Tip $15</a>
+                    <a href="../../membership.html" class="btn btn-primary">Join Research Club</a>
+                </div>
+            </div>
+        `;
+
+        // Insert before the article-footer-note if it exists, otherwise at the end of content
+        const footerNote = content.querySelector('.article-footer-note');
+        if (footerNote) {
+            footerNote.insertAdjacentHTML('beforebegin', tipJarHTML);
+        } else {
+            content.insertAdjacentHTML('beforeend', tipJarHTML);
+        }
+    }
+
+    /* ═══════════════════════════════════════════ */
     /* INIT                                       */
     /* ═══════════════════════════════════════════ */
     if (document.readyState === 'loading') {
@@ -251,6 +279,7 @@
             initCopyButtons();
             initNavScroll();
             initBlogFilters();
+            initTipJar();
         });
     } else {
         initDarkMode();
@@ -260,5 +289,6 @@
         initCopyButtons();
         initNavScroll();
         initBlogFilters();
+        initTipJar();
     }
 })();
