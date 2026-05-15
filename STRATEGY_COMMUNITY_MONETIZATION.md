@@ -11,7 +11,23 @@ Tindol will evolve from a content publishing platform into a thriving knowledge 
 
 ---
 
-## 💰 Revenue Model (7 Streams)
+## 💰 Participation Model
+Tindol is currently in the **Growth & Reputation Phase**.
+*   **Writers:** Contribute for free to build technical equity and authority.
+*   **Readers/Members:** Participate for a nominal fee of **$4/month** to support the research and gain full access.
+
+## Strategic Pivot: Phase 0 (Knowledge Equity & Growth)
+Current Goal: **Build the most respected technical repository on the web.**
+*   **Metric:** Knowledge Equity, Citations, and Global Reach.
+*   **Incentive:** Founding Member Status, Verified Expertise, and Peer Networking.
+*   **Monetization:** Fully deferred until the platform achieves 100k+ monthly visits and a stable following.
+
+### Phase Roadmap
+*   **Phase 0 (Now - 2026):** **The Reputation Phase.** Zero transactions. Focus on content depth, peer review, and authority building.
+*   **Phase 1 (2027):** **The Verified Phase.** Introduce expert certifications and institutional partnerships.
+*   **Phase 2 (2028+):** **The Value Phase.** Optional re-introduction of revenue sharing, marketplaces, and premium tiers based on community feedback.
+
+## 📈 Revenue Model (Target Streams)
 
 ### 1. **Premium Membership Subscriptions**
 - **Developer Tier**: $15/month
@@ -87,11 +103,11 @@ Tindol will evolve from a content publishing platform into a thriving knowledge 
 - Join exclusive webinars
 - Get certification discounts
 
-#### Expert Participation (Contributors)
+#### Founding Expert Participation (Early Contributors)
 - Write articles and tutorials
 - Answer community questions
 - Lead workshops and mentorship
-- **Earn**: 60% of content sales + monthly stipends
+- **Earn**: Accumulate **Reputation Points (TRP)** and secure a **Founding Multiplier** for future 60% revenue sharing.
 
 ### For **Writers & Experts** (Creators)
 
@@ -324,11 +340,11 @@ Tindol will evolve from a content publishing platform into a thriving knowledge 
 - [ ] Design user profiles and reputation system
 - [ ] Set up discussion forums
 
-### Day 5-6: Monetization
-- [ ] Implement subscription tiers
-- [ ] Create content marketplace
-- [ ] Set up revenue sharing system
-- [ ] Design expert booking system
+### Day 5-6: Community & Reputation
+- [ ] Implement Tindol Reputation Points (TRP) logic
+- [ ] Design "Founding Contributor" badges
+- [ ] Create TRP leaderboards
+- [ ] Draft future revenue share agreements for early adopters
 
 ### Day 7: Launch Preparation
 - [ ] Create marketing landing pages

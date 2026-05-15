@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demystifying React Server Components</title>
+    <link rel="stylesheet" href="../blog-styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="blog-nav">
+        <a href="../index.html" class="nav-back">← Blog Home</a>
+        <span class="nav-category">Software Design</span>
+    </nav>
+
+    <article class="article-container">
+        <header class="article-header">
+            <span class="article-tag">Software Design</span>
+            <h1>Demystifying React Server Components: A 2026 Perspective</h1>
+            <div class="article-meta">
+                <span class="reading-time">11 min read</span>
+                <span class="publish-date">May 2026</span>
+            </div>
+        </header>
+
+        <div class="article-content">
+            <p class="lead">React Server Components (RSC) fundamentally changed how we build React applications. By moving the heavy lifting to the server while keeping the rich interactivity of the client, we've achieved a new architectural baseline.</p>
+
+            <h2>The Problem with SPAs</h2>
+            <p>Single Page Applications (SPAs) forced the client to download the entire application logic, routing, and data-fetching code before rendering anything meaningful. This led to massive bundle sizes and waterfall network requests.</p>
+            
+            <h2>The RSC Solution</h2>
+            <p>With Server Components, components execute on the server. They have direct access to backend resources like databases and file systems. The server renders them into a special serialization format, and only sends the result to the client—no JavaScript for the component itself.</p>
+
+            <div class="code-block">
+                <pre><code>// This code never ships to the client!
+import db from '@/lib/db';
+
+export default async function Dashboard() {
+  // Direct database access inside a component
+  const userStats = await db.query('SELECT * FROM stats WHERE user_id = ?', [1]);
+  
+  return (
+    &lt;div className="dashboard"&gt;
+      &lt;h1&gt;Your Stats&lt;/h1&gt;
+      &lt;ul&gt;
+        {userStats.map(stat =&gt; (
+          &lt;li key={stat.id}&gt;{stat.name}: {stat.value}&lt;/li&gt;
+        ))}
+      &lt;/ul&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+            </div>
+
+            <h2>Client Components When Necessary</h2>
+            <p>When you need interactivity (useState, useEffect, onClick), you opt-in to Client Components using the <code>"use client"</code> directive. The architecture encourages leaving most of your app as Server Components and only sprinkling Client Components at the leaves of your component tree.</p>
+
+            <h2>Conclusion</h2>
+            <p>Embracing RSC means rethinking your component boundaries. It's not just a new feature; it's a new mental model for frontend architecture that aligns the best parts of traditional server-rendered apps with the power of modern React.</p>
+        </div>
+    </article>
+
+    <footer class="blog-footer">
+        <div class="footer-content">
+            <p>© 2026 Tindol. All tutorials are battle-tested in production environments.</p>
+            <nav class="footer-nav">
+                <a href="../index.html">Blog Home</a>
+                <a href="../../index.html">Main Site</a>
+            </nav>
+        </div>
+    </footer>
+    <script src="../blog.js"></script>
+</body>
+</html>
